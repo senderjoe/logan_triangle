@@ -116,9 +116,11 @@ void initStage(int stageNo) {
     case 6:  // to "fall through"
       delay(2000);
       rotateDegrees(stepperLeft, -20);  
+      stepperLeft.setAcceleration(500);  // increase acc. to speed up fall through
       break;
     case 7:  // to "short straw horizontal"
       rotateDegrees(stepperLeft, 20);
+      stepperLeft.setAcceleration(ACCELL);
       break;
     case 8:  // to "pose 2" (L)
       delay(2000);
