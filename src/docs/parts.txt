@@ -1,0 +1,7 @@
+Motors:
+17HS08-1004-ME1K Nema 17 Closed Loop Stepper Motor 16Ncm(22.7oz.in) with Magnetic Encoder 1000PPR(4000CPR) 
+
+Drivers:
+DM320T Digital Stepper Driver 0.3-2.2A 10-30VDC for Nema 8, 11, 14, 16, 17 Stepper Motor 
+
+The motors are connected to shafts with 2GT 6mm timing belts and pulleys 
