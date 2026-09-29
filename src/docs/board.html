@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Triangle Carrier Board</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Arial, Helvetica, sans-serif; color: #1a1a1a; background: #fff;
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 277mm; height: 189mm; overflow: hidden; display: flex; flex-direction: column; }
+  .page + .page { break-before: page; }
+  header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #1a1a1a;
+           padding-bottom: 1.5mm; margin-bottom: 2mm; }
+  h1 { font-size: 15pt; margin: 0; }
+  header .meta { font-size: 8.5pt; color: #444; }
+  .body { display: flex; gap: 6mm; flex: 1; min-height: 0; }
+  .drawing { flex: none; }
+  .drawing svg { height: 172mm; width: auto; display: block; }
+  .side { flex: 1; min-width: 0; font-size: 8pt; line-height: 1.35; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  h2 { font-size: 10pt; margin: 0 0 1mm; padding-bottom: 0.6mm; border-bottom: 1px solid #1a1a1a; }
+  .side section { margin-bottom: 3mm; }
+  table { border-collapse: collapse; width: 100%; font-size: 7.9pt; }
+  td, th { padding: 0.6mm 1mm; border-bottom: 1px solid #ddd; text-align: left; vertical-align: top; }
+  th { font-weight: 600; border-bottom: 1px solid #1a1a1a; }
+  td.cb { width: 4.5mm; }
+  td.cb span { display: inline-block; width: 3mm; height: 3mm; border: 1px solid #333; border-radius: 0.5mm; }
+  td.n { width: 6mm; font-weight: 700; }
+  td.h { font-weight: 700; white-space: nowrap; }
+  td.h .rail { font-weight: 400; }
+  td.w { font-size: 7.5pt; color: #333; }
+  td:first-child b { white-space: nowrap; }
+  ul { margin: 0; padding-left: 4mm; }
+  li { margin-bottom: 0.7mm; }
+  .legend { display: flex; flex-direction: column; gap: 0.8mm; font-size: 7.8pt; }
+  .legend svg { width: 12mm; height: 3.2mm; vertical-align: middle; margin-right: 1.5mm; }
+  footer { font-size: 7.5pt; color: #666; text-align: right; }
+</style>
+</head>
+<body>
+
+<!-- ============================ PAGE 1: component side ============================ -->
+<section class="page">
+  <header>
+    <h1>Triangle carrier board: component side</h1>
+    <div class="meta">ElectroCookie half-size protoboard (30 rows, A–J) · v3, 30 Sep 2026 · needs <code>CARRIER_BOARD true</code> in config.h</div>
+  </header>
+  <div class="body">
+    <div class="drawing" id="top"></div>
+    <div class="side">
+      <section>
+        <h2>Placement (board coordinates as printed)</h2>
+        <table>
+          <tr><td><b>Micro</b></td><td>2 × 17-way female header sockets in <b>C1–C17</b> and <b>G1–G17</b>, USB end at row 1. Fit the top centre mounting screw first: it sits under the Micro.</td></tr>
+          <tr><td><b>ENC-R</b></td><td>JST-XH 5-pin in <b>J3–J7</b>, pin 1 at J3. Right motor encoder.</td></tr>
+          <tr><td><b>ENC-L</b></td><td>JST-XH 5-pin in <b>J11–J15</b>, pin 1 at J11. Left motor encoder.</td></tr>
+          <tr><td><b>DRV-R</b></td><td>JST-XH 4-pin in <b>A4–A7</b>, pin 1 at A4. Right driver.</td></tr>
+          <tr><td><b>DRV-L</b></td><td>JST-XH 4-pin in <b>A14–A17</b>, pin 1 at A14. Left driver.</td></tr>
+          <tr><td><b>BTN</b></td><td>JST-XH 2-pin in <b>A9–A10</b>, pin 1 at A9. Start button (optional).</td></tr>
+          <tr><td><b>D1</b></td><td>1N5819: anode in <b>A20</b>, cathode (band) in the <b>left + rail</b> by row 20.</td></tr>
+          <tr><td><b>C1</b></td><td>100 µF 16 V across the left rails by row 22: + leg in the + rail.</td></tr>
+          <tr><td><b>Buck</b></td><td>5 V buck module on foam tape in the empty area (rows 24–30). OUT+ lead to <b>B20</b>, OUT− lead to the <b>left − rail</b> by row 21. IN+ / IN− from the 12 V supply (own pair).</td></tr>
+        </table>
+      </section>
+      <div class="cols">
+        <section>
+          <h2>Cables</h2>
+          <table>
+            <tr><th>Pin</th><th>ENC-R / ENC-L</th><th>DRV-R / DRV-L</th><th>BTN</th></tr>
+            <tr><td>1</td><td>YEL Z</td><td>ENA</td><td>button</td></tr>
+            <tr><td>2</td><td>BLK GND</td><td>OPTO</td><td>button</td></tr>
+            <tr><td>3</td><td>RED 5V</td><td>DIR</td><td></td></tr>
+            <tr><td>4</td><td>BRN A</td><td>PUL</td><td></td></tr>
+            <tr><td>5</td><td>BLU B</td><td></td><td></td></tr>
+          </table>
+          <ul style="margin-top:1mm">
+            <li><b>The encoder pin order has changed</b> from the prototype: crimp to this table. Cut back ORG, GRN and WHT and insulate each.</li>
+            <li>Driver cables follow the DM320T's P1 order. Motor leads go straight to the drivers.</li>
+          </ul>
+        </section>
+        <section>
+          <h2>How it works</h2>
+          <ul>
+            <li>Each connector sits on the same strips as the Micro pins it uses, so <b>no signal needs a wire</b>: the copper joins them.</li>
+            <li>Where a connector needs 5 V or GND instead, that strip is <b>cut</b> between the connector and the Micro, and a short link on the underside joins the connector pin to a rail (page 2).</li>
+            <li>The Micro pins on cut strips (A1, VIN, the left GND, D9, D8, RST) are left unused.</li>
+          </ul>
+          <table style="margin-top:1.5mm">
+            <tr><th>Connector</th><th>Pins reach (top to bottom)</th></tr>
+            <tr><td>ENC-R</td><td>D10, GND*, 5V*, D7, D6</td></tr>
+            <tr><td>ENC-L</td><td>D2, GND, 5V*, D0, D1</td></tr>
+            <tr><td>DRV-R</td><td>A0, 5V*, A2, A3</td></tr>
+            <tr><td>DRV-L</td><td>A4 (link 11)*, 5V*, D14, D15</td></tr>
+            <tr><td>BTN</td><td>A5, GND*</td></tr>
+          </table>
+          <div style="font-size:7.5pt;color:#555;margin-top:0.5mm">* through a cut and an underside link</div>
+          <div class="legend" id="legend1" style="margin-top:2mm"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <footer>Triangle carrier board · page 1 of 2</footer>
+</section>
+
+<!-- ============================ PAGE 2: underside ============================ -->
+<section class="page">
+  <header>
+    <h1>Underside: track cuts and links</h1>
+    <div class="meta">Board turned over left to right: the connectors in column A are now on the <b>right</b></div>
+  </header>
+  <div class="body">
+    <div class="drawing" id="bottom"></div>
+    <div class="side">
+      <div class="cols">
+        <section>
+          <h2>Track cuts</h2>
+          <table id="cuts"></table>
+          <h2 style="margin-top:3mm">Links (all on the underside)</h2>
+          <table id="links"></table>
+        </section>
+        <section>
+          <h2>Build and test</h2>
+          <ul>
+            <li><b>Before anything:</b> check with a meter that no + rail is joined to a − rail.</li>
+            <li><b>Cuts first,</b> with a sharp knife or a 3 mm drill bit twisted by hand. Check with a meter that each one is open.</li>
+            <li><b>Then:</b> mounting screw under the Micro, sockets (plug the Micro in to hold them straight while soldering), XH headers, D1, C1, buck leads, links 1–11.</li>
+            <li><b>Before fitting the Micro:</b> check the + rails to the − rails isn't a short. Connect 12 V to the buck: both + rails should read about 4.6–5.1 V (set an adjustable buck to 5.3 V). Check each connector's 5V and GND pins.</li>
+            <li><b>With the Micro fitted:</b> set <code>CARRIER_BOARD true</code> in config.h, run the test sketch and use <b>t</b> to check each PUL and DIR at the driver end.</li>
+            <li><b>D1</b> stops the buck and a USB lead fighting, so USB can stay plugged in with the 12 V on.</li>
+          </ul>
+          <div class="legend" id="legend2" style="margin-top:2mm"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <footer>Triangle carrier board · page 2 of 2</footer>
+</section>
+
+<script>
+// Board geometry, in 0.1" units. Columns as printed; F is 0.3" from E.
+const COL = { A: 0, B: 1, C: 2, D: 3, E: 4, F: 7, G: 8, H: 9, I: 10, J: 11 };
+const RAIL = { 'L+': -3.8, 'L-': -2.9, 'R+': 14.0, 'R-': 14.9 };
+const BX0 = -4.6, BX1 = 15.9;                 // board edges
+const P = 22;                                 // px per 0.1"
+const X0 = -5.2, X1 = 16.5, Y0 = -2.6, Y1 = 33.6;
+const W = (X1 - X0) * P, H = (Y1 - Y0) * P;
+let MIRROR = false;
+const mx = x => MIRROR ? (BX0 + BX1) - x : x;
+const X = x => (mx(x) - X0) * P, Y = y => (y - Y0) * P;
+
+const NET = {
+  v5:  { color: '#d62828', w: 4.5, hollow: false },
+  gnd: { color: '#1a1a1a', w: 5.5, hollow: true },
+  sig: { color: '#1f5fbf', w: 2.6, hollow: false },
+};
+
+function pt(ref) {
+  if (Array.isArray(ref)) return ref;
+  const m = ref.match(/^([LR][+-])@(\d+)$/);
+  if (m) return [RAIL[m[1]], +m[2]];
+  return [COL[ref[0]], +ref.slice(1)];
+}
+const railName = r => ({ 'L+': 'left + rail', 'L-': 'left − rail', 'R+': 'right + rail', 'R-': 'right − rail' })[r];
+function label(ref) {
+  const m = typeof ref === 'string' && ref.match(/^([LR][+-])@(\d+)$/);
+  return m ? `<span class="rail">${railName(m[1])}, row ${m[2]}</span>` : ref;
+}
+
+// Micro: left header in column C, right header in column G, rows 1-17, USB at row 1
+const LEFT_PINS  = ['D13','3V3','AREF','A0','A1','A2','A3','A4','A5','NC','NC','5V','RST','GND','VIN','D14','D15'];
+const RIGHT_PINS = ['D12','D11','D10','D9','D8','D7','D6','D5','D4','D3','D2','GND','RST','D0','D1','D17','D16'];
+const USED_LEFT  = new Set([4, 6, 7, 8, 9, 12, 16, 17]);    // rows whose Micro pin is used
+const USED_RIGHT = new Set([3, 6, 7, 11, 12, 14, 15]);
+
+// Connectors: pins top to bottom
+const CONNS = [
+  { name: 'DRV-R', col: 'A', rows: [4, 5, 6, 7],          pins: ['ENA','OPTO','DIR','PUL'] },
+  { name: 'BTN',   col: 'A', rows: [9, 10],                pins: ['SIG','GND'] },
+  { name: 'DRV-L', col: 'A', rows: [14, 15, 16, 17],       pins: ['ENA','OPTO','DIR','PUL'] },
+  { name: 'ENC-R', col: 'J', rows: [3, 4, 5, 6, 7],        pins: ['Z','GND','5V','A','B'] },
+  { name: 'ENC-L', col: 'J', rows: [11, 12, 13, 14, 15],   pins: ['Z','GND','5V','A','B'] },
+];
+
+// Track cuts: [row, between columns, what it isolates]
+const CUTS = [
+  [5,  'A', 'B', 'DRV-R OPTO from Micro A1'],
+  [14, 'A', 'B', 'DRV-L ENA from Micro GND'],
+  [15, 'A', 'B', 'DRV-L OPTO from Micro VIN'],
+  [4,  'I', 'J', 'ENC-R GND from Micro D9'],
+  [5,  'I', 'J', 'ENC-R 5V from Micro D8'],
+  [13, 'I', 'J', 'ENC-L 5V from Micro RST'],
+];
+
+// Links, all on the underside: [net, from, to, what]
+const LINKS = [
+  ['v5',  'A12',   'L+@12', 'Micro 5V (C12)'],
+  ['v5',  'A5',    'L+@5',  'DRV-R OPTO'],
+  ['v5',  'A15',   'L+@15', 'DRV-L OPTO'],
+  ['gnd', 'A10',   'L-@10', 'BTN GND (row 10 is an unused NC pin)'],
+  ['gnd', 'J4',    'R-@4',  'ENC-R GND'],
+  ['v5',  'J5',    'R+@5',  'ENC-R 5V'],
+  ['gnd', 'J12',   'R-@12', 'Micro GND to the right − rail'],
+  ['v5',  'J13',   'R+@13', 'ENC-L 5V'],
+  ['v5',  'L+@25', 'R+@25', 'Left + rail to right + rail'],
+  ['gnd', 'L-@26', 'R-@26', 'Left − rail to right − rail'],
+  ['sig', 'A14',   'B8',    'DRV-L ENA to Micro A4'],
+];
+
+function rect(x1, y1, x2, y2, attrs) {
+  const a = X(x1), b = X(x2);
+  return `<rect x="${Math.min(a, b)}" y="${Y(y1)}" width="${Math.abs(b - a)}" height="${(y2 - y1) * P}" ${attrs}/>`;
+}
+function text(x, y, s, attrs = '') { return `<text x="${X(x)}" y="${Y(y)}" ${attrs}>${s}</text>`; }
+function path(pts) { return pts.map((p, i) => { const [x, y] = pt(p); return (i ? 'L' : 'M') + X(x) + ',' + Y(y); }).join(' '); }
+// text anchors flip when mirrored, so labels stay on the same side of their pins
+const anc = a => !MIRROR ? a : (a === 'start' ? 'end' : a === 'end' ? 'start' : a);
+
+function wire(net, pts, faint) {
+  const n = NET[net], d = path(pts);
+  const cap = 'fill="none" stroke-linejoin="round" stroke-linecap="round"';
+  if (faint) return `<path d="${d}" stroke="${n.color}" stroke-width="2.5" stroke-dasharray="1 5" ${cap} opacity="0.7"/>`;
+  let s = `<path d="${d}" stroke="#fff" stroke-width="${n.w + 4}" ${cap}/>`;
+  s += `<path d="${d}" stroke="${n.color}" stroke-width="${n.w}" ${cap}/>`;
+  if (n.hollow) s += `<path d="${d}" stroke="#fff" stroke-width="1.8" ${cap}/>`;
+  return s;
+}
+
+function drawBoard(under) {
+  MIRROR = under;
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">`;
+  s += rect(BX0, -1.9, BX1, 32.6, `fill="${under ? '#3a3a3a' : '#f4f1ea'}" stroke="#1a1a1a" stroke-width="1.5" rx="14"`);
+  const copper = under ? '#d9b65c' : '#e6dcc3';
+  [[5.5, 0.1], [5.5, 30.9]].forEach(([x, y]) => s += `<circle cx="${X(x)}" cy="${Y(y)}" r="${0.55 * P}" fill="#fff" stroke="#999" stroke-width="1.5"/>`);
+  for (let r = 1; r <= 30; r++) {
+    s += rect(-0.3, r - 0.28, 4.3, r + 0.28, `fill="${copper}" rx="5"`);
+    s += rect(6.7, r - 0.28, 11.3, r + 0.28, `fill="${copper}" rx="5"`);
+  }
+  Object.values(RAIL).forEach(x => s += rect(x - 0.28, 0.6, x + 0.28, 30.4, `fill="${copper}" rx="5"`));
+  for (let r = 1; r <= 30; r++) {
+    [...Object.values(COL), ...Object.values(RAIL)].forEach(x =>
+      s += `<circle cx="${X(x)}" cy="${Y(r)}" r="2.6" fill="#fff" stroke="#b9ae93" stroke-width="1"/>`);
+  }
+  const lab = under ? '#ddd' : '#777';
+  Object.entries(COL).forEach(([k, x]) => {
+    s += text(x, -0.35, k, `font-size="10" font-weight="700" fill="${lab}" text-anchor="middle"`);
+    s += text(x, 31.75, k, `font-size="10" font-weight="700" fill="${lab}" text-anchor="middle"`);
+  });
+  for (let r = 1; r <= 30; r++) {
+    s += text(-1.3, r + 0.16, r, `font-size="8.5" fill="${lab}" text-anchor="middle"`);
+    s += text(12.45, r + 0.16, r, `font-size="8.5" fill="${lab}" text-anchor="middle"`);
+  }
+  [['+', 'L+'], ['−', 'L-'], ['+', 'R+'], ['−', 'R-']].forEach(([sym, k]) => {
+    s += text(RAIL[k], -0.35, sym, `font-size="12" font-weight="700" fill="${under ? '#fff' : '#1a1a1a'}" text-anchor="middle"`);
+    s += text(RAIL[k], 31.75, sym, `font-size="12" font-weight="700" fill="${under ? '#fff' : '#1a1a1a'}" text-anchor="middle"`);
+  });
+
+  const outline = 'fill="none" stroke="#bbb" stroke-width="1.2" stroke-dasharray="4 3"';
+  if (!under) {
+    s += rect(1.6, 0.5, 2.4, 17.5, 'fill="#2b2b2b"');
+    s += rect(7.6, 0.5, 8.4, 17.5, 'fill="#2b2b2b"');
+    s += rect(1.45, -0.53, 8.55, 18.5, 'fill="#dce8f5" fill-opacity="0.85" stroke="#1f4e79" stroke-width="2" rx="6"');
+    s += rect(4.4, -1.25, 6.6, 0.05, 'fill="#9a9a9a"');
+    s += `<text x="${X(5.5)}" y="${Y(9)}" font-size="15" font-weight="700" fill="#1f4e79" fill-opacity="0.55" text-anchor="middle" transform="rotate(-90 ${X(5.5)} ${Y(9)})" dy="5">ARDUINO MICRO</text>`;
+  } else {
+    s += rect(1.45, -0.53, 8.55, 18.5, outline + ' rx="6"');
+  }
+  s += text(5.5, -1.45, 'USB end', `font-size="8" fill="${under ? '#ccc' : '#555'}" text-anchor="middle"`);
+
+  // Connectors
+  CONNS.forEach(c => {
+    const x = COL[c.col], r1 = c.rows[0], r2 = c.rows[c.rows.length - 1];
+    s += rect(x - 1.13, r1 - 0.96, x + 1.13, r2 + 0.96, under ? outline + ' rx="2"' : 'fill="#fff" stroke="#1a1a1a" stroke-width="1.5" rx="2"');
+    const inner = c.col === 'A' ? 1 : -1;
+    const tx = x - inner * 0.62, ty = (r1 + r2) / 2;
+    s += `<text x="${X(tx)}" y="${Y(ty)}" font-size="${c.rows.length > 2 ? 9.5 : 8}" font-weight="700" fill="${under ? '#ddd' : '#1a1a1a'}" text-anchor="middle" transform="rotate(-90 ${X(tx)} ${Y(ty)})" dy="3">${c.name}</text>`;
+    if (!under) {
+      c.rows.forEach((r, i) => s += text(x + inner * 0.3, r + 0.15, c.pins[i], `font-size="6.8" font-weight="700" text-anchor="${anc(inner > 0 ? 'start' : 'end')}"`));
+    }
+    const my = r1 - 1.25;
+    s += `<path d="M${X(x) - 4},${Y(my) + 3} L${X(x) + 4},${Y(my) + 3} L${X(x)},${Y(my) - 4} Z" fill="${under ? '#fff' : '#1a1a1a'}"/>`;
+  });
+
+  // D1, C1, buck
+  s += `<path d="${path(['A20', 'L+@20'])}" stroke="${under ? '#ccc' : '#555'}" stroke-width="1.5"/>`;
+  if (!under) {
+    s += rect(-2.75, 19.72, -0.9, 20.28, 'fill="#333"');
+    s += rect(-2.75, 19.72, -2.45, 20.28, 'fill="#fff"');
+    s += `<circle cx="${(X(RAIL['L+']) + X(RAIL['L-'])) / 2}" cy="${Y(22)}" r="${0.75 * P}" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>`;
+    s += rect(0.3, 23.8, 10.7, 30.2, 'fill="#eee" stroke="#1a1a1a" stroke-width="1.5" stroke-dasharray="5 3" rx="4"');
+    s += text(5.5, 26.7, '5 V BUCK MODULE', 'font-size="11" font-weight="700" text-anchor="middle"');
+    s += text(5.5, 27.8, 'on foam tape', 'font-size="8.5" text-anchor="middle" fill="#555"');
+    s += text(5.5, 28.9, 'IN+ / IN− from the 12 V supply', 'font-size="8" text-anchor="middle" fill="#555"');
+    s += `<path d="${path([[2.2, 23.8], [1.4, 21.2], 'B20'])}" stroke="#d62828" stroke-width="3" fill="none"/>`;
+    s += text(2.45, 22.6, 'OUT+', 'font-size="7" font-weight="700"');
+    s += `<path d="${path([[0.8, 23.8], [-1.6, 21.6], 'L-@21'])}" stroke="#1a1a1a" stroke-width="3" fill="none"/>`;
+    s += text(-0.35, 23.4, 'OUT−', 'font-size="7" font-weight="700" text-anchor="end"');
+  } else {
+    s += rect(-2.75, 19.72, -0.9, 20.28, outline);
+    s += `<circle cx="${(X(RAIL['L+']) + X(RAIL['L-'])) / 2}" cy="${Y(22)}" r="${0.75 * P}" ${outline}/>`;
+    s += rect(0.3, 23.8, 10.7, 30.2, outline + ' rx="4"');
+  }
+  s += text(-1.8, 19.35, 'D1', `font-size="8" font-weight="700" fill="${under ? '#ddd' : '#1a1a1a'}" text-anchor="middle"`);
+  s += text(-3.35, 23.7, 'C1', `font-size="7.5" font-weight="700" fill="${under ? '#ddd' : '#1a1a1a'}" text-anchor="middle"`);
+
+  if (under) {
+    CUTS.forEach(([r, a, b]) => {
+      const x = (COL[a] + COL[b]) / 2;
+      s += `<rect x="${X(x) - 4}" y="${Y(r) - 9}" width="8" height="18" fill="#fff" stroke="#d62828" stroke-width="2"/>`;
+      s += `<path d="M${X(x) - 4},${Y(r) - 9} L${X(x) + 4},${Y(r) + 9} M${X(x) + 4},${Y(r) - 9} L${X(x) - 4},${Y(r) + 9}" stroke="#d62828" stroke-width="2"/>`;
+    });
+    LINKS.forEach(([net, a, b]) => s += wire(net, [a, b]));
+    LINKS.forEach(([net, a, b]) => [a, b].forEach(p => {
+      const [x, y] = pt(p);
+      s += `<circle cx="${X(x)}" cy="${Y(y)}" r="3.8" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>`;
+    }));
+    LINKS.forEach(([net, a, b], i) => {
+      const [x1, y1] = pt(a), [x2, y2] = pt(b);
+      let cx = (X(x1) + X(x2)) / 2, cy = (Y(y1) + Y(y2)) / 2;
+      if (i === 8 || i === 9) cx = X(i === 8 ? 2 : 9);
+      s += `<circle cx="${cx}" cy="${cy}" r="7.5" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>`;
+      s += `<text x="${cx}" y="${cy + 3.2}" font-size="8.5" font-weight="700" text-anchor="middle">${i + 1}</text>`;
+    });
+    CUTS.forEach(([r, a, b], i) => {
+      const x = (COL[a] + COL[b]) / 2;
+      s += text(x, r - 0.5, 'X' + (i + 1), 'font-size="8" font-weight="700" fill="#ffb0b0" text-anchor="middle"');
+    });
+  } else {
+    LINKS.forEach(([net, a, b]) => s += wire(net, [a, b], true));
+  }
+
+  // Header and socket pins
+  const pad = (x, y) => `<rect x="${X(x) - 3.5}" y="${Y(y) - 3.5}" width="7" height="7" fill="${under ? '#d9b65c' : '#555'}" stroke="${under ? '#fff' : '#1a1a1a'}" stroke-width="1"/>`;
+  for (let r = 1; r <= 17; r++) { s += pad(2, r); s += pad(8, r); }
+  CONNS.forEach(c => c.rows.forEach(r => s += pad(COL[c.col], r)));
+
+  // Micro pin names
+  const nameAttrs = used => used ? `font-weight="700" fill="${under ? '#fff' : '#1a1a1a'}"` : `fill="${under ? '#999' : '#8a9aac'}"`;
+  const halo = under ? 'paint-order="stroke" stroke="#3a3a3a" stroke-width="3"' : 'paint-order="stroke" stroke="#dce8f5" stroke-width="2.5"';
+  LEFT_PINS.forEach((n, i) => s += text(2.55, i + 1.16, n, `font-size="7.5" text-anchor="${anc('start')}" ${nameAttrs(USED_LEFT.has(i + 1))} ${halo}`));
+  RIGHT_PINS.forEach((n, i) => s += text(7.45, i + 1.16, n, `font-size="7.5" text-anchor="${anc('end')}" ${nameAttrs(USED_RIGHT.has(i + 1))} ${halo}`));
+
+  return s + '</svg>';
+}
+
+function legend(under) {
+  const cap = 'stroke-linecap="round" fill="none"';
+  const out = [];
+  if (under) {
+    out.push(`<span><svg viewBox="0 0 48 14"><rect x="20" y="0" width="8" height="14" fill="#fff" stroke="#d62828" stroke-width="2"/><path d="M20,0 L28,14 M28,0 L20,14" stroke="#d62828" stroke-width="2"/></svg>Track cut (X1–X6)</span>`);
+    out.push(`<span><svg viewBox="0 0 48 12"><path d="M4,6 H44" stroke="#d62828" stroke-width="4.5" ${cap}/></svg>5 V link (thick)</span>`);
+    out.push(`<span><svg viewBox="0 0 48 12"><path d="M4,6 H44" stroke="#1a1a1a" stroke-width="5.5" ${cap}/><path d="M4,6 H44" stroke="#fff" stroke-width="1.8" ${cap}/></svg>GND link (hollow)</span>`);
+    out.push(`<span><svg viewBox="0 0 48 12"><path d="M4,6 H44" stroke="#1f5fbf" stroke-width="2.6" ${cap}/></svg>Signal link (thin)</span>`);
+    out.push(`<span><svg viewBox="0 0 48 12"><circle cx="24" cy="6" r="4" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/></svg>Solder the link here</span>`);
+  } else {
+    out.push(`<span><svg viewBox="0 0 48 12"><rect x="20" y="2" width="8" height="8" fill="#555"/></svg>Header or socket pin</span>`);
+    out.push(`<span><svg viewBox="0 0 48 12"><path d="M4,6 H44" stroke="#d62828" stroke-width="2.5" stroke-dasharray="1 5" ${cap}/></svg>Link on the underside (page 2)</span>`);
+  }
+  return out.join('');
+}
+
+document.getElementById('top').innerHTML = drawBoard(false);
+document.getElementById('bottom').innerHTML = drawBoard(true);
+document.getElementById('legend1').innerHTML = legend(false);
+document.getElementById('legend2').innerHTML = legend(true);
+
+let cuts = '<tr><th></th><th>#</th><th>Between</th><th>Isolates</th></tr>';
+CUTS.forEach(([r, a, b, what], i) => {
+  cuts += `<tr><td class="cb"><span></span></td><td class="n">X${i + 1}</td><td class="h">${a}${r} – ${b}${r}</td><td class="w">${what}</td></tr>`;
+});
+document.getElementById('cuts').innerHTML = cuts;
+
+let links = '<tr><th></th><th>#</th><th>From</th><th>To</th><th>What</th></tr>';
+LINKS.forEach(([net, a, b, what], i) => {
+  links += `<tr><td class="cb"><span></span></td><td class="n">${i + 1}</td><td class="h">${label(a)}</td><td class="h">${label(b)}</td><td class="w">${what}</td></tr>`;
+});
+document.getElementById('links').innerHTML = links;
+</script>
+</body>
+</html>
