@@ -217,6 +217,9 @@ void handleCommand(char c) {
 }
 
 void setup() {
+  pinMode(DRIVER_ENABLE, OUTPUT);
+  digitalWrite(DRIVER_ENABLE, LOW);  // drivers on (Q1 holds them off until this)
+
   Serial.begin(9600);
   while (!Serial && millis() < 5000) {}  // Micro: wait for the serial monitor, but not forever
 

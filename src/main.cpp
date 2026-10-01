@@ -3,7 +3,6 @@
 #include <Encoder.h>
 #include "config.h"    // hardware settings and pins
 #include "sequence.h"  // the stage angles and timings
-#include "homing.h"    // index pulse homing and calibration
 
 AccelStepper stepperLeft(AccelStepper::DRIVER, LEFT_PUL, LEFT_DIR);
 AccelStepper stepperRight(AccelStepper::DRIVER, RIGHT_PUL, RIGHT_DIR);  // Right = back, yellow straw
@@ -11,8 +10,6 @@ AccelStepper stepperRight(AccelStepper::DRIVER, RIGHT_PUL, RIGHT_DIR);  // Right
 Encoder encoderLeft(LEFT_ENC_A, LEFT_ENC_B);
 Encoder encoderRight(RIGHT_ENC_A, RIGHT_ENC_B);
 
-Axis leftAxis = {"Left", stepperLeft, encoderLeft, LEFT_INDEX, -1};
-Axis rightAxis = {"Right", stepperRight, encoderRight, RIGHT_INDEX, 1};
 // Smooth (S-curve) moves. Each move eases in and out: the acceleration rises and falls along a
 // sine curve instead of switching on and off, so the flexible straw linkage isn't kicked into
 // bouncing at the start and end of a move. AccelStepper still makes the step pulses.
@@ -38,8 +35,8 @@ const float FOLLOW_GAIN = 50;
 // How often the curve is worked out (sin/cos are slow on this chip); steps are made in between
 const unsigned long PLAN_INTERVAL_US = 1000;
 
-bool homed = false;  // true once the start pose has been set from the index pulses
-bool countUnknown = true;  // true when the motor power may have just come on, so the step count
+bool driversOn = false;    // the drivers start off, held off by Q1 (see config.h)
+bool countUnknown = true;  // true when the drivers may have just come on, so the step count
                            // no longer matches the drivers (see syncFromEncoders)
 
 void doRotation(AccelStepper &stepper, float rotations); 
@@ -60,7 +57,9 @@ void stopNow();
 void continueSequence();
 void syncFromEncoders();
 void printEncoderPositions();
-void setMotion(float speed, float accel);
+void driversOff();
+void ensureDriversOn();
+void setHomeHere();
 void startSmoothMove(SmoothMove &m, long target, float speed, float accel);
 void updateSmoothMove(SmoothMove &m);
 int currentStage;
@@ -74,8 +73,17 @@ long positionRight;
 long targetLeft;
 long targetRight;
 
+// Start-up: the straws are assumed to be in the start pose, where the last show left them.
+// The drivers are held off until r, so the motors stay free and don't jerk. The encoders count
+// from now, so this pose is 0. When r switches the drivers on, each motor jerks to wherever its
+// driver happens to be; the encoders measure that, and r moves the straws back to 0 before the
+// sequence starts.
 void setup() {
+  pinMode(DRIVER_ENABLE, OUTPUT);
+  driversOff();
+
   Serial.begin(9600);
+  while (!Serial && millis() < 3000) {}  // Micro: wait for the serial monitor, but not forever
   Serial.println(F("Triangle setup"));
 
   initStepper(stepperLeft);
@@ -85,30 +93,15 @@ void setup() {
   positionRight = 0;
   targetLeft = 0;
   targetRight = 0;
-  
+
   currentStage = -1;  // don't start the sequence until r
-  initHoming(leftAxis, rightAxis);
 
-  if (isCalibrated()) {
-    // Find the start pose from the index pulses, whatever the motors did at power-on
-    if (HOME_AT_POWER_ON) {
-      delay(HOME_DELAY_MS);
-      homed = homeAll(leftAxis, rightAxis);
-      if (homed) countUnknown = false;
-    }
-  } else {
-    // Not calibrated: the encoders count from this moment, so the pose the straws are in now is 0.
-    // Switch the motor power on after this, then press r: any jerk as the drivers power up
-    // is measured by the encoders and corrected before the sequence starts.
-    Serial.println(F("Not calibrated for homing: encoders zeroed at the current pose."));
-    Serial.println(F("Switch on the motor power, then press r to start."));
-  }
-
-  Serial.println(F("Keys: r = restart, x = stop now, c = continue after a stop, p = print encoder positions"));
-  Serial.println(F("      h = home, i = calibrate step 1 (straws off), o = save the current pose as the start pose"));
+  Serial.println(F("Motors off. The current pose is the start pose."));
+  Serial.println(F("Keys: r = start (motor power must be on), x = stop now, c = continue after a stop,"));
+  Serial.println(F("      p = print encoder positions, f = free the motors, h = make the current pose home"));
 }
 
-// True when nothing is moving, so homing or calibration can take over the motors
+// True when nothing is moving, so the motors can be freed or home set
 bool idle() {
   if (currentStage != -1 || returningHome) {
     Serial.println(F("Stop first (x)"));
@@ -161,40 +154,18 @@ void handleSerial() {
   switch (Serial.read()) {
     case 'r':
     case 'R':
-      if (isCalibrated() && !homed) {
-        homed = homeAll(leftAxis, rightAxis);
-        if (!homed) break;
-        countUnknown = false;
-      }
       restartSequence();
+      break;
+    case 'f':
+    case 'F':
+      if (idle()) {
+        driversOff();
+        Serial.println(F("Motors free: set the straws by hand, then press h to make this pose home"));
+      }
       break;
     case 'h':
     case 'H':
-      if (idle()) {
-        stoppedStage = -1;
-        homed = homeAll(leftAxis, rightAxis);
-        if (homed) countUnknown = false;
-        setMotion(PIVOT_SPEED, PIVOT_ACCEL);
-      }
-      break;
-    case 'i':
-    case 'I':
-      if (idle()) {
-        stoppedStage = -1;
-        homed = false;
-        runFindIndex(leftAxis, rightAxis);
-        countUnknown = true;  // the motor power is switched off and on during calibration
-        setMotion(PIVOT_SPEED, PIVOT_ACCEL);
-      }
-      break;
-    case 'o':
-    case 'O':
-      if (idle()) {
-        stoppedStage = -1;
-        homed = runSetStartPose(leftAxis, rightAxis);
-        countUnknown = true;  // the motor power is switched back on after this
-        setMotion(PIVOT_SPEED, PIVOT_ACCEL);
-      }
+      if (idle()) setHomeHere();
       break;
     case 'x':
     case 'X':
@@ -213,15 +184,46 @@ void handleSerial() {
   }
 }
 
+// Switch the drivers off: the motors go free and can be turned by hand. The encoders keep counting.
+void driversOff() {
+  digitalWrite(DRIVER_ENABLE, HIGH);  // Q1 on, so ENA draws current: drivers disabled
+  driversOn = false;
+}
+
+// Switch the drivers on, if they're off, and wait for the jerk as they take hold of the motors.
+// The step count then no longer matches the drivers, so the next syncFromEncoders resets it.
+void ensureDriversOn() {
+  if (driversOn) return;
+  Serial.println(F("Motors on"));
+  digitalWrite(DRIVER_ENABLE, LOW);
+  delay(ENABLE_SETTLE_MS);
+  driversOn = true;
+  countUnknown = true;
+}
+
+// Make the pose the straws are in now the start pose (0)
+void setHomeHere() {
+  encoderLeft.write(0);
+  encoderRight.write(0);
+  stepperLeft.setCurrentPosition(0);
+  stepperRight.setCurrentPosition(0);
+  stoppedStage = -1;
+  // With the drivers on, they're holding the motors here, so the count matches.
+  // With them off, the count is reset when they come on (ensureDriversOn).
+  if (driversOn) countUnknown = false;
+  Serial.println(F("Home set: this pose is now the start pose"));
+}
+
 // Return both pivots to 0, then run the sequence from stage 0.
 // Takes the current position from the encoders first, so 0 is the pose the straws were in
-// when the Micro started, even if the motors have jerked or slipped since.
+// at start-up (or when h was pressed), even if the motors have jerked or slipped since.
 void restartSequence() {
   Serial.println(F("Restart: returning to the start pose"));
   currentStage = -1;  // pause stage advance until home
   holding = false;
   stoppedStage = -1;
 
+  ensureDriversOn();
   syncFromEncoders();
   startSmoothMove(moveLeft, 0, PIVOT_SPEED, PIVOT_ACCEL);
   startSmoothMove(moveRight, 0, PIVOT_SPEED, PIVOT_ACCEL);
@@ -259,6 +261,7 @@ void continueSequence() {
   int stage = stoppedHolding ? stoppedStage + 1 : stoppedStage;
   stoppedStage = -1;
   Serial.println(F("Continuing"));
+  ensureDriversOn();
   syncFromEncoders();
   initStage(stage);
 }
@@ -280,8 +283,8 @@ void printEncoderPositions() {
 // Set the motors' step positions from the encoders, e.g. after a power-up jerk or a nudge
 // Before r or c moves anything: stop any move in progress, and reset the step count from the
 // encoders only if the count can't be trusted:
-//  - the motor power may have just come on. The power-on jerk moves each motor to wherever its
-//    driver happens to be, so the encoder is the best guide to where the driver now is.
+//  - the drivers may have just come on. The jerk as they switch on moves each motor to wherever
+//    its driver happens to be, so the encoder is the best guide to where the driver now is.
 //  - or a motor is more than a full step out, so it has slipped.
 // Otherwise the count still matches where the drivers are holding the motors, and resetting it
 // from the encoders would add friction's small shortfall to the next move.
@@ -310,14 +313,6 @@ void syncFromEncoders() {
   Serial.print(countsToPivotDegrees(positionLeft), 1);
   Serial.print(F(", right "));
   Serial.println(countsToPivotDegrees(positionRight), 1);
-}
-
-// Set speed and acceleration for both motors, in pivot degrees/s and degrees/s/s
-void setMotion(float speed, float accel) {
-  stepperLeft.setMaxSpeed(speed * STEP_PER_PIVOT_DEGREE);
-  stepperRight.setMaxSpeed(speed * STEP_PER_PIVOT_DEGREE);
-  stepperLeft.setAcceleration(accel * STEP_PER_PIVOT_DEGREE);
-  stepperRight.setAcceleration(accel * STEP_PER_PIVOT_DEGREE);
 }
 
 void printPositions() {

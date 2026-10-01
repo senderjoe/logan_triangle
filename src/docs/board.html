@@ -44,7 +44,7 @@
 <section class="page">
   <header>
     <h1>Triangle carrier board: component side</h1>
-    <div class="meta">ElectroCookie half-size protoboard (30 rows, A–J) · v3, 30 Sep 2026 · needs <code>CARRIER_BOARD true</code> in config.h</div>
+    <div class="meta">ElectroCookie half-size protoboard (30 rows, A–J) · v4, 1 Oct 2026 · needs <code>CARRIER_BOARD true</code> in config.h</div>
   </header>
   <div class="body">
     <div class="drawing" id="top"></div>
@@ -60,6 +60,8 @@
           <tr><td><b>BTN</b></td><td>JST-XH 2-pin in <b>A9–A10</b>, pin 1 at A9. Start button (optional).</td></tr>
           <tr><td><b>D1</b></td><td>1N5819: anode in <b>A20</b>, cathode (band) in the <b>left + rail</b> by row 20.</td></tr>
           <tr><td><b>C1</b></td><td>100 µF 16 V across the left rails by row 22: + leg in the + rail.</td></tr>
+          <tr><td><b>Q1</b></td><td>2N2222 (or 2N3904): E in <b>J21</b>, B in <b>J22</b>, C in <b>J23</b>, flat face towards column I. Holds the drivers off until the program starts.</td></tr>
+          <tr><td><b>R1 R2</b></td><td>R1 4.7 kΩ from <b>I18</b> to the <b>right + rail</b> by row 18. R2 1 kΩ from <b>H18</b> to <b>H22</b>.</td></tr>
           <tr><td><b>Buck</b></td><td>5 V buck module on foam tape in the empty area (rows 24–30). OUT+ lead to <b>B20</b>, OUT− lead to the <b>left − rail</b> by row 21. IN+ / IN− from the 12 V supply (own pair).</td></tr>
         </table>
       </section>
@@ -84,14 +86,14 @@
           <ul>
             <li>Each connector sits on the same strips as the Micro pins it uses, so <b>no signal needs a wire</b>: the copper joins them.</li>
             <li>Where a connector needs 5 V or GND instead, that strip is <b>cut</b> between the connector and the Micro, and a short link on the underside joins the connector pin to a rail (page 2).</li>
-            <li>The Micro pins on cut strips (A1, VIN, the left GND, D9, D8, RST) are left unused.</li>
+            <li>The Micro pins on cut strips (A1, VIN, the left GND, D9, D8, RST) are left unused. A0 is cut from DRV-R ENA and drives Q1 instead.</li>
           </ul>
           <table style="margin-top:1.5mm">
             <tr><th>Connector</th><th>Pins reach (top to bottom)</th></tr>
             <tr><td>ENC-R</td><td>D10, GND*, 5V*, D7, D6</td></tr>
             <tr><td>ENC-L</td><td>D2, GND, 5V*, D0, D1</td></tr>
-            <tr><td>DRV-R</td><td>A0, 5V*, A2, A3</td></tr>
-            <tr><td>DRV-L</td><td>A4 (link 11)*, 5V*, D14, D15</td></tr>
+            <tr><td>DRV-R</td><td>Q1 C (link 12)*, 5V*, A2, A3</td></tr>
+            <tr><td>DRV-L</td><td>Q1 C (link 11)*, 5V*, D14, D15</td></tr>
             <tr><td>BTN</td><td>A5, GND*</td></tr>
           </table>
           <div style="font-size:7.5pt;color:#555;margin-top:0.5mm">* through a cut and an underside link</div>
@@ -124,8 +126,9 @@
           <ul>
             <li><b>Before anything:</b> check with a meter that no + rail is joined to a − rail.</li>
             <li><b>Cuts first,</b> with a sharp knife or a 3 mm drill bit twisted by hand. Check with a meter that each one is open.</li>
-            <li><b>Then:</b> mounting screw under the Micro, sockets (plug the Micro in to hold them straight while soldering), XH headers, D1, C1, buck leads, links 1–11.</li>
+            <li><b>Then:</b> mounting screw under the Micro, sockets (plug the Micro in to hold them straight while soldering), XH headers, D1, C1, R1, R2, Q1, buck leads, links 1–14. Links 11–13 are insulated wire along the bare channel between columns E and F.</li>
             <li><b>Before fitting the Micro:</b> check the + rails to the − rails isn't a short. Connect 12 V to the buck: both + rails should read about 4.6–5.1 V (set an adjustable buck to 5.3 V). Check each connector's 5V and GND pins.</li>
+            <li><b>Q1 check,</b> Micro out, 12 V on: both DRV ENA pins read under 0.3 V to GND (drivers held off).</li>
             <li><b>With the Micro fitted:</b> set <code>CARRIER_BOARD true</code> in config.h, run the test sketch and use <b>t</b> to check each PUL and DIR at the driver end.</li>
             <li><b>D1</b> stops the buck and a USB lead fighting, so USB can stay plugged in with the 12 V on.</li>
           </ul>
@@ -170,7 +173,7 @@ function label(ref) {
 // Micro: left header in column C, right header in column G, rows 1-17, USB at row 1
 const LEFT_PINS  = ['D13','3V3','AREF','A0','A1','A2','A3','A4','A5','NC','NC','5V','RST','GND','VIN','D14','D15'];
 const RIGHT_PINS = ['D12','D11','D10','D9','D8','D7','D6','D5','D4','D3','D2','GND','RST','D0','D1','D17','D16'];
-const USED_LEFT  = new Set([4, 6, 7, 8, 9, 12, 16, 17]);    // rows whose Micro pin is used
+const USED_LEFT  = new Set([4, 6, 7, 9, 12, 16, 17]);    // rows whose Micro pin is used
 const USED_RIGHT = new Set([3, 6, 7, 11, 12, 14, 15]);
 
 // Connectors: pins top to bottom
@@ -190,9 +193,12 @@ const CUTS = [
   [4,  'I', 'J', 'ENC-R GND from Micro D9'],
   [5,  'I', 'J', 'ENC-R 5V from Micro D8'],
   [13, 'I', 'J', 'ENC-L 5V from Micro RST'],
+  [4,  'A', 'B', 'DRV-R ENA from Micro A0'],
 ];
 
-// Links, all on the underside: [net, from, to, what]
+// Links, all on the underside: [net, from, to, what, route points, label point]
+// Links 11-13 run along the bare channel between columns E and F (x 4.3-6.7), crossing the
+// left strips in the gaps between rows.
 const LINKS = [
   ['v5',  'A12',   'L+@12', 'Micro 5V (C12)'],
   ['v5',  'A5',    'L+@5',  'DRV-R OPTO'],
@@ -204,7 +210,18 @@ const LINKS = [
   ['v5',  'J13',   'R+@13', 'ENC-L 5V'],
   ['v5',  'L+@25', 'R+@25', 'Left + rail to right + rail'],
   ['gnd', 'L-@26', 'R-@26', 'Left − rail to right − rail'],
-  ['sig', 'A14',   'B8',    'DRV-L ENA to Micro A4'],
+  ['sig', 'A14',   'G23',   'DRV-L ENA to Q1 C', [[0.5, 13.5], [4.9, 13.5], [4.9, 23.5], [7.6, 23.5]], [4.9, 18.5]],
+  ['sig', 'A4',    'F23',   'DRV-R ENA to Q1 C', [[0.5, 4.5], [5.3, 4.5], [5.3, 23]], [5.3, 8.5]],
+  ['sig', 'E4',    'F18',   'Micro A0 to R1 and R2', [[6.1, 4], [6.1, 18]], [6.1, 11]],
+  ['gnd', 'J21',   'R-@21', 'Q1 E to GND'],
+];
+
+// Q1 hold-off: 2N2222 legs E, B, C down column J, flat face towards column I
+const Q1 = { x: 11, rows: [21, 22, 23], pins: ['E', 'B', 'C'] };
+// Resistors: [name, value, from, to]
+const RES = [
+  ['R1', '4.7k', 'I18', 'R+@18'],
+  ['R2', '1k',   'H18', 'H22'],
 ];
 
 function rect(x1, y1, x2, y2, attrs) {
@@ -303,21 +320,41 @@ function drawBoard(under) {
   s += text(-1.8, 19.35, 'D1', `font-size="8" font-weight="700" fill="${under ? '#ddd' : '#1a1a1a'}" text-anchor="middle"`);
   s += text(-3.35, 23.7, 'C1', `font-size="7.5" font-weight="700" fill="${under ? '#ddd' : '#1a1a1a'}" text-anchor="middle"`);
 
+  // Q1 and its resistors
+  const ink = under ? '#ddd' : '#1a1a1a';
+  RES.forEach(([name, value, a, b]) => {
+    const [x1, y1] = pt(a), [x2, y2] = pt(b);
+    const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, vert = x1 === x2;
+    if (!under) s += `<path d="${path([a, b])}" stroke="#555" stroke-width="1.5"/>`;
+    s += vert ? rect(cx - 0.42, cy - 1.15, cx + 0.42, cy + 1.15, under ? outline + ' rx="3"' : 'fill="#e8d9b0" stroke="#1a1a1a" stroke-width="1.3" rx="3"')
+              : rect(cx - 1.15, cy - 0.42, cx + 1.15, cy + 0.42, under ? outline + ' rx="3"' : 'fill="#e8d9b0" stroke="#1a1a1a" stroke-width="1.3" rx="3"');
+    s += vert ? text(cx - 0.6, cy + 0.15, `${name} ${value}`, `font-size="7.5" font-weight="700" fill="${ink}" text-anchor="${anc('end')}"`)
+              : text(cx, cy - 0.65, `${name} ${value}`, `font-size="7.5" font-weight="700" fill="${ink}" text-anchor="middle"`);
+  });
+  {
+    const fx = Q1.x - 0.55, y1 = Q1.rows[0] - 0.3, y2 = Q1.rows[2] + 0.3, cx = Q1.x + 1.2;
+    const d = `M${X(fx)},${Y(y1)} L${X(fx)},${Y(y2)} C${X(cx)},${Y(y2)} ${X(cx)},${Y(y1)} ${X(fx)},${Y(y1)} Z`;
+    s += `<path d="${d}" ${under ? outline : 'fill="#2b2b2b" stroke="#1a1a1a" stroke-width="1.3"'}/>`;
+    s += text(Q1.x, Q1.rows[0] - 0.75, 'Q1', `font-size="8" font-weight="700" fill="${ink}" text-anchor="middle"`);
+    if (!under) Q1.rows.forEach((r, i) => s += text(Q1.x + 0.32, r + 0.14, Q1.pins[i], `font-size="6.5" font-weight="700" fill="#fff" text-anchor="${anc('start')}"`));
+  }
+
   if (under) {
     CUTS.forEach(([r, a, b]) => {
       const x = (COL[a] + COL[b]) / 2;
       s += `<rect x="${X(x) - 4}" y="${Y(r) - 9}" width="8" height="18" fill="#fff" stroke="#d62828" stroke-width="2"/>`;
       s += `<path d="M${X(x) - 4},${Y(r) - 9} L${X(x) + 4},${Y(r) + 9} M${X(x) + 4},${Y(r) - 9} L${X(x) - 4},${Y(r) + 9}" stroke="#d62828" stroke-width="2"/>`;
     });
-    LINKS.forEach(([net, a, b]) => s += wire(net, [a, b]));
+    LINKS.forEach(([net, a, b, , via = []]) => s += wire(net, [a, ...via, b]));
     LINKS.forEach(([net, a, b]) => [a, b].forEach(p => {
       const [x, y] = pt(p);
       s += `<circle cx="${X(x)}" cy="${Y(y)}" r="3.8" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>`;
     }));
-    LINKS.forEach(([net, a, b], i) => {
+    LINKS.forEach(([net, a, b, , via, lab], i) => {
       const [x1, y1] = pt(a), [x2, y2] = pt(b);
       let cx = (X(x1) + X(x2)) / 2, cy = (Y(y1) + Y(y2)) / 2;
       if (i === 8 || i === 9) cx = X(i === 8 ? 2 : 9);
+      if (lab) { cx = X(lab[0]); cy = Y(lab[1]); }
       s += `<circle cx="${cx}" cy="${cy}" r="7.5" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>`;
       s += `<text x="${cx}" y="${cy + 3.2}" font-size="8.5" font-weight="700" text-anchor="middle">${i + 1}</text>`;
     });
@@ -326,13 +363,15 @@ function drawBoard(under) {
       s += text(x, r - 0.5, 'X' + (i + 1), 'font-size="8" font-weight="700" fill="#ffb0b0" text-anchor="middle"');
     });
   } else {
-    LINKS.forEach(([net, a, b]) => s += wire(net, [a, b], true));
+    LINKS.forEach(([net, a, b, , via = []]) => s += wire(net, [a, ...via, b], true));
   }
 
   // Header and socket pins
   const pad = (x, y) => `<rect x="${X(x) - 3.5}" y="${Y(y) - 3.5}" width="7" height="7" fill="${under ? '#d9b65c' : '#555'}" stroke="${under ? '#fff' : '#1a1a1a'}" stroke-width="1"/>`;
   for (let r = 1; r <= 17; r++) { s += pad(2, r); s += pad(8, r); }
   CONNS.forEach(c => c.rows.forEach(r => s += pad(COL[c.col], r)));
+  Q1.rows.forEach(r => s += `<circle cx="${X(Q1.x)}" cy="${Y(r)}" r="3" fill="${under ? '#d9b65c' : '#bbb'}" stroke="${under ? '#fff' : '#1a1a1a'}" stroke-width="1"/>`);
+  RES.forEach(([, , a, b]) => [a, b].forEach(p => { const [x, y] = pt(p); s += `<circle cx="${X(x)}" cy="${Y(y)}" r="2.6" fill="${under ? '#d9b65c' : '#bbb'}" stroke="${under ? '#fff' : '#1a1a1a'}" stroke-width="1"/>`; }));
 
   // Micro pin names
   const nameAttrs = used => used ? `font-weight="700" fill="${under ? '#fff' : '#1a1a1a'}"` : `fill="${under ? '#999' : '#8a9aac'}"`;
@@ -347,7 +386,7 @@ function legend(under) {
   const cap = 'stroke-linecap="round" fill="none"';
   const out = [];
   if (under) {
-    out.push(`<span><svg viewBox="0 0 48 14"><rect x="20" y="0" width="8" height="14" fill="#fff" stroke="#d62828" stroke-width="2"/><path d="M20,0 L28,14 M28,0 L20,14" stroke="#d62828" stroke-width="2"/></svg>Track cut (X1–X6)</span>`);
+    out.push(`<span><svg viewBox="0 0 48 14"><rect x="20" y="0" width="8" height="14" fill="#fff" stroke="#d62828" stroke-width="2"/><path d="M20,0 L28,14 M28,0 L20,14" stroke="#d62828" stroke-width="2"/></svg>Track cut (X1–X7)</span>`);
     out.push(`<span><svg viewBox="0 0 48 12"><path d="M4,6 H44" stroke="#d62828" stroke-width="4.5" ${cap}/></svg>5 V link (thick)</span>`);
     out.push(`<span><svg viewBox="0 0 48 12"><path d="M4,6 H44" stroke="#1a1a1a" stroke-width="5.5" ${cap}/><path d="M4,6 H44" stroke="#fff" stroke-width="1.8" ${cap}/></svg>GND link (hollow)</span>`);
     out.push(`<span><svg viewBox="0 0 48 12"><path d="M4,6 H44" stroke="#1f5fbf" stroke-width="2.6" ${cap}/></svg>Signal link (thin)</span>`);

@@ -19,6 +19,7 @@ The step count is checked against the encoders at the end of every stage. The se
 | `Triangle sequence.jpg` | The hand-drawn sequence sheet: the design intent for each pose |
 | `wiring.pdf` | Prototype wiring (v5), with a connection checklist and DIP settings |
 | `wiring-v6.pdf` | The same wiring on the carrier board's pins |
+| `wiring-v7.pdf` | v6 plus Q1, which holds the drivers off until the program starts |
 | `board.pdf` | Carrier board layout for an ElectroCookie half-size protoboard |
 | Datasheets | Motor and encoder, DM320T manual, Arduino Micro pinout |
 
@@ -26,10 +27,9 @@ The step count is checked against the encoders at the end of every stage. The se
 
 | File | What it does |
 |---|---|
-| `include/config.h` | Hardware settings, motion defaults, homing settings, and the pin map |
+| `include/config.h` | Hardware settings, motion defaults, and the pin map |
 | `include/sequence.h` | **The choreography:** one row per stage, with angles, hold time, speed and acceleration. Edit this to tweak the sequence. |
 | `src/main.cpp` | Runs the sequence, checks the encoders, and handles keyboard control |
-| `src/homing.cpp` | Homing on the encoder index pulse, and its calibration |
 | `src/hwtest/` | Wiring test sketch |
 
 **Pin map:** set `CARRIER_BOARD` in `config.h` to match the wiring. Use `false` for the prototype wiring in `wiring.pdf`, and `true` for the carrier board, or for the prototype rewired from `wiring-v6.pdf`.
@@ -51,25 +51,27 @@ pio device monitor -e micro
 
 ## Running it
 
-Once calibrated, the program homes on the index pulses at power-on, then moves to the start pose. After that it waits for `r`. Before calibration, 0° is wherever the straws are when the Micro starts.
+The program assumes the straws are in the start pose when it starts. Every run of the sequence ends back there, so that's where the last run left them.
+
+At power-on the drivers are held off by Q1, a 2N2222 on their ENA inputs, so the motors are free and don't jerk. The encoders count from this moment, so the current pose is 0°. Pressing `r` switches the drivers on. Each motor jerks by up to a few degrees as its driver takes hold. The encoders measure the jerk, and the straws move smoothly back to 0° before the sequence starts.
 
 Serial monitor keys:
 
 | Key | Action |
 |---|---|
-| `r` | Restart: return to the start pose, then run the sequence |
-| `x` | Stop both motors immediately |
+| `r` | Start: switch the motors on, return to the start pose, then run the sequence |
+| `x` | Stop both motors immediately. They stay on and hold their position. |
 | `c` | Continue after a stop |
 | `p` | Print the encoder positions, in degrees |
-| `h` | Home on the index pulses |
-| `i` | Calibration step 1, with the straws off: find each motor's index pulse |
-| `o` | Save the current pose as the start pose. Use it after `i`, or after homing, to move the start pose. |
+| `f` | Free the motors (drivers off), so the straws can be turned by hand |
+| `h` | Make the current pose the start pose |
 
-## Calibrating the start pose
+## Setting the start pose
 
-1. Take the straws off and press `i`, then `y`. Each motor turns until it finds its index pulse.
-2. Switch the motor power off, but keep the USB connected so the encoders keep counting.
-3. Fit the straws with each one about 5–10° forward of its start pose. Then turn each straw back to the exact start pose.
-4. Press `o`. The offsets are saved in EEPROM, so they survive power-off and new uploads.
+1. Stop the sequence (`x`) if it's running.
+2. Press `f`, then set the straws to the start pose by hand.
+3. Press `h`.
 
-To move the start pose later: home, switch the motor power off, set the straws by hand, then press `o`.
+The start pose isn't saved. If the power is cut mid-sequence, put the straws back in the start pose by hand before the next start.
+
+**Without Q1 fitted** (ENA unconnected), the drivers are always on and `f` has no effect. Plug in the USB before the motor power, so the encoders are already counting when the jerk happens.
