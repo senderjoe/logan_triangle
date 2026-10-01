@@ -7,7 +7,7 @@ Arduino program for the Triangle kinetic sculpture maquette. Two stepper motors 
 - **Controller:** Arduino Micro.
 - **Motors:** 2 × 17HS08-1004-ME1K Nema 17 steppers, each with a 1000-line magnetic encoder (4000 counts/rev plus an index pulse).
 - **Drivers:** 2 × DM320T stepper drivers, with DIP switches set to 1.3 A peak and 8000 steps/rev.
-- **Belts:** 2GT belts, with a 36T pulley on each motor and a 16T pulley on each pivot, so the pivot turns 2.25× the motor.
+- **Belts:** 2GT belts, 194 mm, with 16T pulleys at both ends (1:1).
 - **Power:** a 12–24 V supply for the drivers. The Micro runs from USB, or in the finished build from a 5 V buck converter.
 
 The step count is checked against the encoders at the end of every stage. The sequence stops if they disagree by more than 5°, which would mean a jam or a fault.

@@ -6,7 +6,7 @@
 
 #define STEP_PER_REVOLUTION 8000  // motor steps per rev, DM320T DIP SW4-6 all OFF
 #define COUNT_PER_REVOLUTION 4000 // encoder counts per motor rev
-#define GEAR_RATIO (36.0 / 16.0)  // belt: 36T on motor, 16T on pivot, so the pivot turns 2.25x the motor
+#define GEAR_RATIO 1.0            // belt: 16T on motor, 16T on pivot, 194 mm 2GT belt (was 36T:16T, 2.25x, until Oct 2026)
 
 // All angles, speeds and accelerations are at the pivot, not the motor
 #define STEP_PER_PIVOT_REVOLUTION (STEP_PER_REVOLUTION / GEAR_RATIO)
@@ -44,7 +44,7 @@ const int ENCODER_SIGN = -1;
 //  - the prototype wiring, see src/docs/wiring.pdf
 //  - the carrier board, see src/docs/board.pdf. Each connector sits on the same strips as the
 //    Micro pins it uses, so the pins are chosen to line up with the connectors.
-#define CARRIER_BOARD false  // set to true once the carrier board is built
+#define CARRIER_BOARD true   // true for the carrier board, or the prototype wired from wiring-v6.pdf
 
 #if CARRIER_BOARD
 // Reserved, not used yet: A0 = right ENA, A4 = left ENA, A5 = START button (to GND)

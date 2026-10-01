@@ -17,7 +17,7 @@
 
 namespace {
 
-const uint16_t CAL_MAGIC = 0x7A13;
+const uint16_t CAL_MAGIC = 0x7A14;  // bumped for the 1:1 belts and new pins: old calibrations are ignored
 
 struct Calibration {
   uint16_t magic;
