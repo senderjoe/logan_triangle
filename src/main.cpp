@@ -13,6 +13,31 @@ Encoder encoderRight(RIGHT_ENC_A, RIGHT_ENC_B);
 
 Axis leftAxis = {"Left", stepperLeft, encoderLeft, LEFT_INDEX, -1};
 Axis rightAxis = {"Right", stepperRight, encoderRight, RIGHT_INDEX, 1};
+// Smooth (S-curve) moves. Each move eases in and out: the acceleration rises and falls along a
+// sine curve instead of switching on and off, so the flexible straw linkage isn't kicked into
+// bouncing at the start and end of a move. AccelStepper still makes the step pulses.
+struct SmoothMove {
+  AccelStepper *stepper;
+  bool active;
+  long start;                 // steps
+  long distance;              // steps, signed
+  float speed;                // cruise speed, steps/s
+  float ramp;                 // time to ease up to cruise speed, and to ease down from it, s
+  float total;                // time for the whole move, s
+  unsigned long startMicros;
+  unsigned long planMicros;   // when the curve was last worked out
+  long target;                // where the motor should be now, steps
+  bool finished;              // the curve has reached its end
+};
+
+SmoothMove moveLeft = {&stepperLeft, false};
+SmoothMove moveRight = {&stepperRight, false};
+
+// How hard a motor catches up if it falls behind the planned curve, in steps/s per step behind
+const float FOLLOW_GAIN = 50;
+// How often the curve is worked out (sin/cos are slow on this chip); steps are made in between
+const unsigned long PLAN_INTERVAL_US = 1000;
+
 bool homed = false;  // true once the start pose has been set from the index pulses
 bool countUnknown = true;  // true when the motor power may have just come on, so the step count
                            // no longer matches the drivers (see syncFromEncoders)
@@ -36,6 +61,8 @@ void continueSequence();
 void syncFromEncoders();
 void printEncoderPositions();
 void setMotion(float speed, float accel);
+void startSmoothMove(SmoothMove &m, long target, float speed, float accel);
+void updateSmoothMove(SmoothMove &m);
 int currentStage;
 bool returningHome = false;  // true while moving back to 0 before a restart
 bool holding = false;        // true while holding a pose after a stage has arrived
@@ -120,8 +147,8 @@ void loop() {
     }
   }
 
-  stepperLeft.run();   
-  stepperRight.run(); 
+  updateSmoothMove(moveLeft);
+  updateSmoothMove(moveRight);
 
   checkPosition();
   
@@ -196,9 +223,8 @@ void restartSequence() {
   stoppedStage = -1;
 
   syncFromEncoders();
-  setMotion(PIVOT_SPEED, PIVOT_ACCEL);  // in case it stopped during a stage with its own speed
-  rotateTo(stepperLeft, 0);
-  rotateTo(stepperRight, 0);
+  startSmoothMove(moveLeft, 0, PIVOT_SPEED, PIVOT_ACCEL);
+  startSmoothMove(moveRight, 0, PIVOT_SPEED, PIVOT_ACCEL);
   returningHome = true;
 }
 
@@ -208,6 +234,8 @@ void stopNow() {
     stoppedStage = currentStage;
     stoppedHolding = holding;
   }
+  moveLeft.active = false;
+  moveRight.active = false;
   stepperLeft.setCurrentPosition(stepperLeft.currentPosition());    // also sets speed to 0
   stepperRight.setCurrentPosition(stepperRight.currentPosition());
   currentStage = -1;
@@ -264,6 +292,9 @@ void syncFromEncoders() {
   long right = positionRight * STEP_PER_COUNT;
   bool slipped = labs(left - stepperLeft.currentPosition()) > fullStep ||
                  labs(right - stepperRight.currentPosition()) > fullStep;
+
+  moveLeft.active = false;
+  moveRight.active = false;
 
   if (countUnknown || slipped) {
     stepperLeft.setCurrentPosition(left);    // also stops any move in progress
@@ -337,10 +368,83 @@ void initStepper(AccelStepper &stepper) {
 }
 
 bool stageComplete() {
-  return (
-    stepperLeft.distanceToGo() == 0 &&
-    stepperRight.distanceToGo() == 0 
-  );
+  return !moveLeft.active && !moveRight.active;
+}
+
+// Plan a smooth move to target (steps). speed is the cruise speed in pivot degrees/s, accel the
+// peak acceleration in pivot degrees/s/s, reached halfway through each ease.
+void startSmoothMove(SmoothMove &m, long target, float speed, float accel) {
+  m.start = m.stepper->currentPosition();
+  m.distance = target - m.start;
+  if (m.distance == 0) {
+    m.active = false;
+    return;
+  }
+
+  float d = labs(m.distance);
+  float v = speed * STEP_PER_PIVOT_DEGREE;
+  float a = accel * STEP_PER_PIVOT_DEGREE;
+  // A sine-shaped ease up to speed v, peaking at acceleration a, takes pi*v/(2a) seconds and covers
+  // v/2 steps per second of it. If easing up and down would take more than the whole move, the
+  // move is too short to reach v, so lower v until the two eases just meet.
+  if (PI * v * v / (2 * a) > d) v = sqrt(2 * a * d / PI);
+
+  m.speed = v;
+  m.ramp = PI * v / (2 * a);
+  m.total = 2 * m.ramp + (d - v * m.ramp) / v;
+  m.startMicros = micros();
+  m.planMicros = m.startMicros - PLAN_INTERVAL_US;  // plan straight away
+  m.target = m.start;
+  m.finished = false;
+  m.active = true;
+}
+
+// Distance and speed u seconds into an ease up from rest
+static float easeDistance(const SmoothMove &m, float u) {
+  return m.speed * (u / 2 - m.ramp / (2 * PI) * sin(PI * u / m.ramp));
+}
+static float easeSpeed(const SmoothMove &m, float u) {
+  return m.speed * (1 - cos(PI * u / m.ramp)) / 2;
+}
+
+// Step the motor along its planned curve. Call as often as possible.
+void updateSmoothMove(SmoothMove &m) {
+  if (!m.active) return;
+
+  // Every PLAN_INTERVAL_US: work out where the motor should be now, and set the step speed
+  // to match the curve, plus a little extra if it has fallen behind
+  unsigned long now = micros();
+  if (now - m.planMicros >= PLAN_INTERVAL_US) {
+    m.planMicros = now;
+    float t = (now - m.startMicros) * 1e-6;
+    float d = labs(m.distance);
+    float s, v;  // steps from the start, and speed in steps/s
+    if (t >= m.total) {
+      s = d;
+      v = 0;
+      m.finished = true;
+    } else if (t < m.ramp) {
+      s = easeDistance(m, t);
+      v = easeSpeed(m, t);
+    } else if (t > m.total - m.ramp) {
+      s = d - easeDistance(m, m.total - t);
+      v = easeSpeed(m, m.total - t);
+    } else {
+      s = m.speed * m.ramp / 2 + m.speed * (t - m.ramp);
+      v = m.speed;
+    }
+    m.target = m.start + (m.distance > 0 ? lround(s) : -lround(s));
+    long behind = m.target - m.stepper->currentPosition();
+    float stepSpeed = v + FOLLOW_GAIN * labs(behind);
+    m.stepper->setSpeed(behind >= 0 ? stepSpeed : -stepSpeed);
+  }
+
+  if (m.stepper->currentPosition() != m.target) {
+    m.stepper->runSpeed();  // makes one step if it's time for the next one
+  } else if (m.finished) {
+    m.stepper->setSpeed(0);
+    m.active = false;
+  }
 }
 
 void checkPosition() {
@@ -395,9 +499,10 @@ void initStage(int stageNo) {
   Serial.print(F(": "));
   Serial.println(stage.name);
 
-  setMotion(stage.speed ? stage.speed : PIVOT_SPEED, stage.accel ? stage.accel : PIVOT_ACCEL);
-  if (stage.left != HOLD) rotateTo(stepperLeft, stage.left);
-  if (stage.right != HOLD) rotateTo(stepperRight, stage.right);
+  float speed = stage.speed ? stage.speed : PIVOT_SPEED;
+  float accel = stage.accel ? stage.accel : PIVOT_ACCEL;
+  if (stage.left != HOLD) startSmoothMove(moveLeft, pivotDegreesToSteps(stage.left), speed, accel);
+  if (stage.right != HOLD) startSmoothMove(moveRight, pivotDegreesToSteps(stage.right), speed, accel);
 }
 
 // Reset to starting position during testing

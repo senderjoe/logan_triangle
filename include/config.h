@@ -11,8 +11,8 @@
 // All angles, speeds and accelerations are at the pivot, not the motor
 #define STEP_PER_PIVOT_REVOLUTION (STEP_PER_REVOLUTION / GEAR_RATIO)
 #define STEP_PER_PIVOT_DEGREE (STEP_PER_PIVOT_REVOLUTION / 360.0)
-#define PIVOT_SPEED 10   // degrees/s, from the sequence sheet: 90 deg in 9 s
-#define PIVOT_ACCEL 5   // degrees/s/s
+#define PIVOT_SPEED 12   // degrees/s, from the sequence sheet: 90 deg in 9 s
+#define PIVOT_ACCEL 12   // degrees/s/s, peak: moves ease in and out (S-curve, see main.cpp)
 #define RUNSPEED (PIVOT_SPEED * STEP_PER_PIVOT_DEGREE)
 #define ACCELL (PIVOT_ACCEL * STEP_PER_PIVOT_DEGREE)
 
